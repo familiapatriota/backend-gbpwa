@@ -10,19 +10,21 @@ const app = express();
 app.use(cors()); // Habilita o CORS para todas as requisições
 app.use(express.json());
 
+
+
 // --- CONEXÃO COM FIREBASE ---
 // Carrega as credenciais do Firebase Admin SDK
 try {
+  // Carrega as credenciais do Firebase a partir das variáveis de ambiente do Render
   const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+  });
 } catch (error) {
-  console.error("ERRO: O arquivo 'firebase-service-account.json' não foi encontrado ou está inválido.");
-  console.error("Por favor, baixe o arquivo do seu console do Firebase e coloque-o na pasta 'server'.");
-  process.exit(1); // Encerra a aplicação se o arquivo de credenciais não for encontrado
+  console.error("ERRO: As credenciais do Firebase não puderam ser carregadas a partir da variável de ambiente FIREBASE_CREDENTIALS.");
+  console.error("Por favor, verifique se a variável de ambiente foi configurada corretamente no painel do Render.");
+  process.exit(1); // Encerra a aplicação se as credenciais não forem encontradas
 }
-const db = admin.firestore();
 
 // --- MIDDLEWARE DE AUTENTICAÇÃO ---
 // Esta função irá verificar se o usuário está logado em todas as rotas protegidas
