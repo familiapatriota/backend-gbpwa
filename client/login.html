@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Guriri Beach</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#007bff">
+</head>
+<body>
+    <div class="container">
+        <div id="auth-container">
+            <div id="login-form">
+                <h2>Entrar</h2>
+                <input type="email" id="login-email" placeholder="Email" required autocomplete="email">
+                <input type="password" id="login-password" placeholder="Senha" required autocomplete="current-password">
+                <div id="login-error" class="error-message"></div>
+                <button id="btn-login" class="btn">Entrar</button>
+                <p>Não tem uma conta? <a href="#" id="show-signup">Cadastre-se</a></p>
+            </div>
+
+            <div id="signup-form" style="display: none;">
+                <h2>Cadastrar</h2>
+                <input type="text" id="signup-name" placeholder="Nome Completo" required autocomplete="name">
+                <input type="text" id="signup-cpf" placeholder="CPF (somente números)" required>
+                <input type="email" id="signup-email" placeholder="Email" required autocomplete="email">
+                <input type="password" id="signup-password" placeholder="Senha (mínimo 6 caracteres)" required autocomplete="new-password">
+                <div id="signup-error" class="error-message"></div>
+                <button id="btn-signup" class="btn">Cadastrar</button>
+                <p>Já tem uma conta? <a href="#" id="show-login">Faça o login</a></p>
+            </div>
+        </div>
+        <div id="loading-overlay" class="loading-overlay">
+            <div class="spinner"></div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS DO FIREBASE - ESSENCIAL PARA O FUNCIONAMENTO -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <script>
+      // ===================================================================================
+      // ===================================================================================
+      //
+      //       ATENÇÃO: COLE A SUA CONFIGURAÇÃO REAL DO FIREBASE AQUI EMBAIXO
+      //       APAGUE O BLOCO DE EXEMPLO E COLE O SEU NO LUGAR
+      //
+      // ===================================================================================
+      // ===================================================================================
+      const firebaseConfig = {
+  apiKey: "AIzaSyCDtREYBn95s3_kky35chsMp45aPjeNE0U",
+  authDomain: "guriri-beach-pwa.firebaseapp.com",
+  projectId: "guriri-beach-pwa",
+  storageBucket: "guriri-beach-pwa.firebasestorage.app",
+  messagingSenderId: "453970260104",
+  appId: "1:453970260104:web:ebed0385cd50abf34bef3d"
+};
+      // ===================================================================================
+      //       FIM DA ÁREA DE CONFIGURAÇÃO DO FIREBASE
+      // ===================================================================================
+
+      // Inicializa o Firebase
+      if (typeof firebase !== 'undefined') {
+          firebase.initializeApp(firebaseConfig);
+      } else {
+          console.error("Firebase SDK não foi carregado. Verifique sua conexão com a internet.");
+          alert("Não foi possível carregar os recursos necessários. Verifique sua conexão.");
+      }
+    </script>
+    
+    <!-- SCRIPT DA SUA APLICAÇÃO -->
+    <script src="app.js"></script>
+</body>
+</html>
+

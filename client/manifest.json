@@ -1,0 +1,20 @@
+{
+  "short_name": "Guriri Beach",
+  "name": "Mensalidades do Guriri Beach",
+  "start_url": "/login.html",
+  "display": "standalone",
+  "background_color": "#f4f7f9",
+  "theme_color": "#007bff",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}
