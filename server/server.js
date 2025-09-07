@@ -13,10 +13,10 @@ app.use(express.json());
 // --- CONEXÃO COM FIREBASE ---
 // Carrega as credenciais do Firebase Admin SDK
 try {
-  const serviceAccount = require('./firebase-service-account.json');
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
-  });
+  const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
 } catch (error) {
   console.error("ERRO: O arquivo 'firebase-service-account.json' não foi encontrado ou está inválido.");
   console.error("Por favor, baixe o arquivo do seu console do Firebase e coloque-o na pasta 'server'.");
