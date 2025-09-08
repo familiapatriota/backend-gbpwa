@@ -6,59 +6,52 @@
     <title>Mensalidades | Guriri Beach</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#007bff">
+    <meta name="theme-color" content="#007bff"/>
 </head>
 <body>
-    <div class="container">
-        <header class="main-header">
-            <h1>Minhas Mensalidades</h1>
-            <div id="user-info"></div>
-            <button id="btn-logout" class="btn btn-secondary">Sair</button>
-        </header>
-        
-        <main id="mensalidades-content">
-            <div id="loading-mensalidades" class="loading-container">
-                <div class="spinner"></div>
-                <p>Buscando suas mensalidades...</p>
-            </div>
-            
-            <div id="error-container" class="error-message" style="display: none;"></div>
+    <div class="card-container">
+        <div class="card">
+            <header class="main-header">
+                <div id="user-info">Olá...</div>
+                <button id="btn-logout" class="btn-secondary">Sair</button>
+            </header>
 
-            <section id="vencidas" class="mensalidade-section" style="display: none;">
-                <h2>Vencidas</h2>
-                <div id="vencidas-container" class="card-container"></div>
-            </section>
-    
-            <section id="apagar" class="mensalidade-section" style="display: none;">
-                <h2>A Pagar</h2>
-                <div id="apagar-container" class="card-container"></div>
-            </section>
-    
-            <section id="pagas" class="mensalidade-section" style="display: none;">
-                <h2>Pagas</h2>
-                <div id="pagas-container" class="card-container"></div>
-            </section>
+            <div class="card-body">
+                <!-- Tela de Carregamento -->
+                <div id="loading-container" style="display: none; text-align: center; padding: 40px;">
+                    <div class="loader"></div>
+                    <p>Buscando suas mensalidades...</p>
+                </div>
 
-            <div id="no-mensalidades" class="info-message" style="display: none;">
-                <p>Nenhuma mensalidade encontrada para o seu CPF.</p>
+                <!-- Seção de Mensalidades (inicialmente oculta) -->
+                <div id="invoices-section" style="display: none;">
+                    <div class="invoice-category">
+                        <h3>Vencidas</h3>
+                        <div id="vencidas-container"></div>
+                    </div>
+                    <div class="invoice-category">
+                        <h3>A Pagar</h3>
+                        <div id="apagar-container"></div>
+                    </div>
+                    <div class="invoice-category">
+                        <h3>Pagas</h3>
+                        <div id="pagas-container"></div>
+                    </div>
+                </div>
             </div>
-        </main>
+        </div>
     </div>
 
-    <!-- SCRIPTS DO FIREBASE - ESSENCIAL PARA O FUNCIONAMENTO -->
+    <!-- Scripts do Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
     <script>
-      // ===================================================================================
-      // ===================================================================================
-      //
-      //       ATENÇÃO: COLE A SUA CONFIGURAÇÃO REAL DO FIREBASE AQUI EMBAIXO
-      //       APAGUE O BLOCO DE EXEMPLO E COLE O SEU NO LUGAR
-      //
-      // ===================================================================================
-      // ===================================================================================
+      // =================================================================
+      // COLE SUA CONFIGURAÇÃO DO FIREBASE AQUI
+      // (a variável firebaseConfig que você copiou do console do Firebase)
+      // =================================================================
       const firebaseConfig = {
   apiKey: "AIzaSyCDtREYBn95s3_kky35chsMp45aPjeNE0U",
   authDomain: "guriri-beach-pwa.firebaseapp.com",
@@ -67,21 +60,17 @@
   messagingSenderId: "453970260104",
   appId: "1:453970260104:web:ebed0385cd50abf34bef3d"
 };
-      // ===================================================================================
-      //       FIM DA ÁREA DE CONFIGURAÇÃO DO FIREBASE
-      // ===================================================================================
+      // =================================================================
 
       // Inicializa o Firebase
-      if (typeof firebase !== 'undefined') {
-          firebase.initializeApp(firebaseConfig);
-      } else {
-          console.error("Firebase SDK não foi carregado. Verifique sua conexão com a internet.");
-          alert("Não foi possível carregar os recursos necessários. Verifique sua conexão.");
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
       }
     </script>
-    
-    <!-- SCRIPT DA SUA APLICAÇÃO -->
-    <script src="app.js"></script>
+
+    <script src="app.js" defer></script>
 </body>
 </html>
+
+
 

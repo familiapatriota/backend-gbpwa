@@ -1,256 +1,235 @@
+// =================================================================
+// INSIRA A URL DO SEU BACKEND AQUI
+// Copie a URL do seu serviço no Render (ex: https://guriri-beach-api.onrender.com)
+// e cole dentro das aspas abaixo.
+// =================================================================
+const backendUrl = 'https://guriri-beach-api.onrender.com';
+// =================================================================
+
+
+// --- INICIALIZAÇÃO DO FIREBASE E LÓGICA PRINCIPAL ---
 document.addEventListener('DOMContentLoaded', () => {
-    // Verifica se o Firebase está disponível
-    if (typeof firebase === 'undefined') {
-        console.error("Firebase não está carregado.");
-        return;
-    }
+  // Verifique se a configuração do Firebase está disponível
+  if (typeof firebase === 'undefined' || !firebase.apps.length) {
+    console.error('Firebase não está carregado. Verifique o script de configuração no HTML.');
+    return;
+  }
 
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+  const auth = firebase.auth();
+  const db = firebase.firestore();
 
-    // --- LÓGICA DE NAVEGAÇÃO ENTRE TELAS ---
-    const page = window.location.pathname;
+  // Verifica em qual página o script está rodando pela existência de um elemento chave
+  const isLoginPage = document.getElementById('login-form');
+  const isMainPage = document.getElementById('invoices-section');
 
-    if (page.includes('login.html')) {
-        setupLoginPage();
-    } else if (page.includes('index.html')) {
-        setupMainPage();
-    }
+  if (isLoginPage) {
+    setupLoginPage();
+  } else if (isMainPage) {
+    // Na página principal, primeiro verificamos o estado de autenticação
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        // Se o usuário está logado, configuramos a página principal
+        setupMainPage(user);
+      } else {
+        // Se não está logado, redireciona para o login
+        window.location.href = 'login.html';
+      }
+    });
+  }
 
-    // --- FUNÇÕES DE SETUP DAS PÁGINAS ---
+  // --- FUNÇÕES DE SETUP DAS PÁGINAS ---
 
-    function setupLoginPage() {
-        const loginForm = document.getElementById('login-form');
-        const signupForm = document.getElementById('signup-form');
-        const showSignupLink = document.getElementById('show-signup');
-        const showLoginLink = document.getElementById('show-login');
+  function setupLoginPage() {
+    const loginForm = document.getElementById('login-form');
+    const signupForm = document.getElementById('signup-form');
+    const showSignupLink = document.getElementById('show-signup');
+    const showLoginLink = document.getElementById('show-login');
 
-        showSignupLink.addEventListener('click', () => {
+    if (showSignupLink) {
+        showSignupLink.addEventListener('click', (e) => {
+            e.preventDefault();
             loginForm.style.display = 'none';
             signupForm.style.display = 'block';
         });
-
-        showLoginLink.addEventListener('click', () => {
+    }
+    
+    if (showLoginLink) {
+        showLoginLink.addEventListener('click', (e) => {
+            e.preventDefault();
             signupForm.style.display = 'none';
             loginForm.style.display = 'block';
         });
-
-        // Event Listeners para os botões
-        document.getElementById('btn-login').addEventListener('click', handleLogin);
-        document.getElementById('btn-signup').addEventListener('click', handleSignup);
     }
 
-    function setupMainPage() {
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                document.getElementById('user-info').textContent = `Olá, ${user.email}`;
-                fetchAndDisplayInvoices(user);
-            } else {
-                window.location.replace('login.html');
-            }
-        });
+    // Event listeners para os botões
+    document.getElementById('btn-login').addEventListener('click', handleLogin);
+    document.getElementById('btn-signup').addEventListener('click', handleSignup);
+  }
 
-        document.getElementById('btn-logout').addEventListener('click', () => {
-            auth.signOut();
-        });
+  function setupMainPage(user) {
+    document.getElementById('user-info').textContent = `Olá, ${user.email}`;
+    document.getElementById('btn-logout').addEventListener('click', () => {
+      auth.signOut();
+    });
+    fetchAndDisplayInvoices(user);
+  }
+
+  // --- FUNÇÕES DE AUTENTICAÇÃO E MANIPULAÇÃO DE DADOS ---
+
+  async function handleSignup(e) {
+    e.preventDefault();
+    const name = document.getElementById('signup-name').value;
+    const cpf = document.getElementById('signup-cpf').value;
+    const email = document.getElementById('signup-email').value;
+    const password = document.getElementById('signup-password').value;
+
+    if (!name || !cpf || !email || !password) {
+      showError('Por favor, preencha todos os campos.', 'signup-error');
+      return;
     }
 
-    // --- FUNÇÕES DE MANIPULAÇÃO (HANDLERS) ---
+    try {
+      const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+      const user = userCredential.user;
+      await db.collection('users').doc(user.uid).set({ name, cpf, email });
+      window.location.href = 'index.html';
+    } catch (error) {
+      console.error("Erro detalhado no cadastro:", error);
+      let message = 'Ocorreu um erro. Por favor, tente mais tarde.';
+      if (error.code === 'auth/email-already-in-use') message = 'Este e-mail já está em uso.';
+      if (error.code === 'auth/weak-password') message = 'A senha deve ter no mínimo 6 caracteres.';
+      if (error.code === 'permission-denied') message = 'Erro de permissão ao salvar dados.';
+      showError(message, 'signup-error');
+    }
+  }
 
-    async function handleLogin() {
-        const email = document.getElementById('login-email').value;
-        const password = document.getElementById('login-password').value;
-        const errorDiv = document.getElementById('login-error');
-        
-        clearError(errorDiv);
+  async function handleLogin(e) {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
 
-        if (!email || !password) {
-            showError(errorDiv, "Por favor, preencha todos os campos.");
-            return;
-        }
-
-        toggleLoading(true);
-        try {
-            await auth.signInWithEmailAndPassword(email, password);
-            window.location.assign('index.html');
-        } catch (error) {
-            console.error("Erro no login:", error);
-            showError(errorDiv, getFriendlyErrorMessage(error.code));
-        } finally {
-            toggleLoading(false);
-        }
+    if (!email || !password) {
+      showError('Por favor, preencha todos os campos.', 'login-error');
+      return;
     }
 
-    async function handleSignup() {
-        const name = document.getElementById('signup-name').value;
-        const cpf = document.getElementById('signup-cpf').value;
-        const email = document.getElementById('signup-email').value;
-        const password = document.getElementById('signup-password').value;
-        const errorDiv = document.getElementById('signup-error');
-
-        clearError(errorDiv);
-
-        if (!name || !cpf || !email || !password) {
-            showError(errorDiv, "Por favor, preencha todos os campos.");
-            return;
-        }
-        if (password.length < 6) {
-            showError(errorDiv, "A senha deve ter no mínimo 6 caracteres.");
-            return;
-        }
-
-        toggleLoading(true);
-        try {
-            const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-            const user = userCredential.user;
-            
-            await db.collection('users').doc(user.uid).set({
-                name: name,
-                cpf: cpf.replace(/\D/g, ''), // Salva apenas números
-                email: email
-            });
-
-            window.location.assign('index.html');
-        } catch (error) {
-            // Log detalhado para depuração
-            console.error("Erro detalhado no cadastro:", {
-                code: error.code,
-                message: error.message
-            });
-            showError(errorDiv, getFriendlyErrorMessage(error.code));
-        } finally {
-            toggleLoading(false);
-        }
+    try {
+      await auth.signInWithEmailAndPassword(email, password);
+      window.location.href = 'index.html';
+    } catch (error) {
+      console.error("Erro detalhado no login:", error);
+      let message = 'Ocorreu um erro. Por favor, tente mais tarde.';
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        message = 'E-mail ou senha incorretos.';
+      }
+      showError(message, 'login-error');
     }
+  }
 
-    async function fetchAndDisplayInvoices(user) {
-        toggleMensalidadesLoading(true);
-        const errorContainer = document.getElementById('error-container');
-        errorContainer.style.display = 'none';
-
-        try {
-            const idToken = await user.getIdToken(true);
-            const response = await fetch('/api/mensalidades', {
-                headers: { 'Authorization': `Bearer ${idToken}` }
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(errorText || `Erro ${response.status}`);
-            }
-
-            const mensalidades = await response.json();
-            renderMensalidades(mensalidades);
-
-        } catch (error) {
-            console.error("Erro ao buscar mensalidades:", error);
-            errorContainer.textContent = `Não foi possível buscar as mensalidades: ${error.message}`;
-            errorContainer.style.display = 'block';
-        } finally {
-            toggleMensalidadesLoading(false);
-        }
-    }
-
-    // --- FUNÇÕES DE RENDERIZAÇÃO E UTILITÁRIAS ---
-
-    function renderMensalidades(mensalidades) {
-        const containers = {
-            vencidas: document.getElementById('vencidas-container'),
-            apagar: document.getElementById('apagar-container'),
-            pagas: document.getElementById('pagas-container')
-        };
-
-        Object.values(containers).forEach(c => c.innerHTML = '');
-
-        if (mensalidades.length === 0) {
-            document.getElementById('no-mensalidades').style.display = 'block';
-            return;
-        }
-
-        const hoje = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
-
-        mensalidades.forEach(inv => {
-            let status = '';
-            let container = null;
-
-            if (inv.status === 'PAID' || inv.status === 'CONFIRMED') {
-                status = 'paga';
-                container = containers.pagas;
-            } else if (inv.dueDate < hoje) {
-                status = 'vencida';
-                container = containers.vencidas;
-            } else {
-                status = 'apagar';
-                container = containers.apagar;
-            }
-            
-            if (container) {
-                const card = createInvoiceCard(inv, status);
-                container.innerHTML += card;
-                document.getElementById(status + 's').style.display = 'block';
-            }
-        });
-    }
-
-    function createInvoiceCard(inv, statusClass) {
-        const valor = parseFloat(inv.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        const vencimento = new Date(inv.dueDate + 'T12:00:00').toLocaleDateString('pt-BR');
-
-        return `
-            <div class="card">
-                <p class="card-status status-${statusClass}">${statusClass.toUpperCase()}</p>
-                <p class="card-valor">${valor}</p>
-                <p>Vencimento: ${vencimento}</p>
-                <a href="${inv.invoiceUrl}" target="_blank" class="card-link">Ver Boleto / Pagar</a>
-            </div>
-        `;
-    }
+  async function fetchAndDisplayInvoices(user) {
+    const loadingContainer = document.getElementById('loading-container');
+    const invoicesSection = document.getElementById('invoices-section');
     
-    function getFriendlyErrorMessage(code) {
-        switch (code) {
-            case 'auth/user-not-found':
-            case 'auth/invalid-credential': // Novo código de erro para login inválido
-                return "E-mail ou senha incorreta. Por favor, tente novamente.";
-            case 'auth/wrong-password':
-                return "Senha incorreta. Por favor, tente novamente.";
-            case 'auth/invalid-email':
-                return "O formato do e-mail é inválido.";
-            case 'auth/email-already-in-use':
-                return "Este e-mail já está cadastrado.";
-            case 'auth/weak-password':
-                return "A senha é muito fraca. Tente uma mais forte.";
-            case 'permission-denied': // Adicionado erro de permissão do Firestore
-                return "Erro de permissão no banco de dados. Verifique as regras de segurança.";
-            default:
-                return "Ocorreu um erro. Por favor, tente mais tarde.";
+    loadingContainer.style.display = 'block';
+    invoicesSection.style.display = 'none';
+
+    try {
+      const idToken = await user.getIdToken(true); // Força a atualização do token
+      const response = await fetch(`${backendUrl}/api/mensalidades`, {
+        headers: {
+          'Authorization': `Bearer ${idToken}`
         }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Erro do servidor (${response.status}): ${errorData}`);
+      }
+
+      const invoices = await response.json();
+      renderInvoices(invoices);
+
+    } catch (error) {
+      console.error("Erro ao buscar mensalidades:", error);
+      const vencidasContainer = document.getElementById('vencidas-container');
+      vencidasContainer.innerHTML = `<p class="error-message">Não foi possível buscar as mensalidades. Verifique sua conexão e tente novamente.</p>`;
+    } finally {
+      loadingContainer.style.display = 'none';
+      invoicesSection.style.display = 'block';
+    }
+  }
+
+  function renderInvoices(invoices) {
+    const vencidasContainer = document.getElementById('vencidas-container');
+    const apagarContainer = document.getElementById('apagar-container');
+    const pagasContainer = document.getElementById('pagas-container');
+
+    vencidasContainer.innerHTML = '';
+    apagarContainer.innerHTML = '';
+    pagasContainer.innerHTML = '';
+
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    if (invoices.length === 0) {
+        apagarContainer.innerHTML = "<p>Nenhuma mensalidade encontrada.</p>";
+        return;
     }
 
-    function showError(element, message) {
-        element.textContent = message;
-        element.style.display = 'block';
-    }
+    invoices.forEach(inv => {
+      const dueDate = new Date(inv.dueDate);
+      const invoiceElement = document.createElement('div');
+      invoiceElement.className = 'invoice-card';
 
-    function clearError(element) {
-        element.textContent = '';
-        element.style.display = 'none';
-    }
+      let statusTag = '';
+      if (inv.status === 'PAID' || inv.status === 'CONFIRMED') {
+        statusTag = '<span class="tag tag-pago">PAGO</span>';
+      } else if (dueDate < hoje) {
+        statusTag = '<span class="tag tag-vencido">VENCIDA</span>';
+      }
 
-    function toggleLoading(isLoading) {
-        document.getElementById('loading-overlay').style.display = isLoading ? 'flex' : 'none';
-    }
+      invoiceElement.innerHTML = `
+        <div class="invoice-details">
+            <p class="invoice-value">R$ ${Number(inv.value).toFixed(2).replace('.', ',')}</p>
+            <p class="invoice-due-date">Vencimento: ${new Date(inv.dueDate).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</p>
+        </div>
+        <div class="invoice-actions">
+            ${statusTag}
+            <a href="${inv.invoiceUrl || inv.bankSlipUrl}" target="_blank" class="btn-primary">Ver Boleto / Pagar</a>
+        </div>
+      `;
 
-    function toggleMensalidadesLoading(isLoading) {
-        document.getElementById('loading-mensalidades').style.display = isLoading ? 'flex' : 'none';
-    }
+      if (inv.status === 'PAID' || inv.status === 'CONFIRMED') {
+        pagasContainer.appendChild(invoiceElement);
+      } else if (dueDate < hoje) {
+        vencidasContainer.appendChild(invoiceElement);
+      } else {
+        apagarContainer.appendChild(invoiceElement);
+      }
+    });
 
-    // --- REGISTRO DO SERVICE WORKER ---
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./service-worker.js')
-                .then(reg => console.log('Service Worker registrado com sucesso.'))
-                .catch(err => console.log('Erro no registro do Service Worker:', err));
-        });
+    if(vencidasContainer.childElementCount === 0) vencidasContainer.innerHTML = "<p>Nenhuma mensalidade vencida.</p>";
+    if(apagarContainer.childElementCount === 0) apagarContainer.innerHTML = "<p>Nenhuma mensalidade a pagar.</p>";
+    if(pagasContainer.childElementCount === 0) pagasContainer.innerHTML = "<p>Nenhuma mensalidade paga.</p>";
+  }
+
+  function showError(message, elementId) {
+    const errorElement = document.getElementById(elementId);
+    if(errorElement){
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
     }
+  }
 });
+
+// --- REGISTRO DO SERVICE WORKER ---
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/gbpwa/service-worker.js').then(registration => {
+      console.log('ServiceWorker registrado com sucesso: ', registration.scope);
+    }, err => {
+      console.log('Falha no registro do ServiceWorker: ', err);
+    });
+  });
+}
 
