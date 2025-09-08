@@ -7,41 +7,40 @@ const admin = require('firebase-admin');
 const app = express();
 
 // --- CONFIGURAÇÃO DE CORS (Cross-Origin Resource Sharing) ---
-// Lista de domínios que têm permissão para acessar este backend.
 const allowedOrigins = [
   'http://localhost:3000',
   'https://guriribeach.com.br',
-  'https://www.guriribeach.com.br' // Adicionando a versão com 'www' por segurança
+  'https://www.guriribeach.com.br'
 ];
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // Permite requisições da lista de permissões e requisições sem 'origin' (como Postman)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Acesso não permitido pela política de CORS'));
     }
   },
-  optionsSuccessStatus: 200 // Para navegadores mais antigos
+  optionsSuccessStatus: 200
 };
 
-// Habilita o CORS com as opções definidas
+// Habilita o CORS para todas as requisições
 app.use(cors(corsOptions));
+// **NOVO:** Responde explicitamente às requisições de preflight (OPTIONS)
+app.options('*', cors(corsOptions));
 // Habilita o Express para entender requisições com corpo em JSON
 app.use(express.json());
 
 
 // --- CONEXÃO COM FIREBASE ---
 try {
-  // Carrega as credenciais do Firebase a partir das variáveis de ambiente do Render
   const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
   });
 } catch (error) {
-  console.error("ERRO: As credenciais do Firebase não puderam ser carregadas a partir da variável de ambiente FIREBASE_CREDENTIALS.");
-  console.error("Por favor, verifique se a variável de ambiente foi configurada corretamente no painel do Render.");
+  console.error("ERRO: As credenciais do Firebase não puderam ser carregadas.");
+  console.error("Verifique a variável de ambiente FIREBASE_CREDENTIALS no painel do Render.");
   process.exit(1);
 }
 
@@ -81,7 +80,6 @@ app.get('/api/mensalidades', checkAuth, async (req, res) => {
       { headers: { "access_token": ASAAS_API_KEY } }
     );
     if (customerResponse.data.totalCount === 0) {
-      // Se não encontrar o cliente no ASAAS, retorna um array vazio (não é um erro)
       return res.status(200).json([]);
     }
     const customerId = customerResponse.data.data[0].id;
